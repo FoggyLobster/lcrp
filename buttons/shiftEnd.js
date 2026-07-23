@@ -113,9 +113,14 @@ module.exports = {
         .setDisabled(true),
     );
 
-    return interaction.update({
+    interaction.update({
       embeds: [embed],
       components: [buttons],
+    });
+
+    return interaction.reply({
+      content: "Shift has ended.",
+      ephemeral: true,
     });
   },
 };
