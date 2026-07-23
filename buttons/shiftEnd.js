@@ -91,7 +91,7 @@ module.exports = {
         WHERE user_id = ?
       `,
       )
-      .get(user.id);
+      .get(userId);
 
     const totalTime = total_time ? total_time.time : 0;
 
