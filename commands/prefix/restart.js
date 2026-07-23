@@ -10,6 +10,8 @@ module.exports = {
       return message.reply("You do not have permission to use this command.");
     }
 
+    const msg = await message.reply("Restarting...");
+
     exec("pm2 restart lcrp", (error, stdout, stderr) => {
       if (error) {
         return message.reply(
@@ -22,11 +24,8 @@ module.exports = {
       if (!output) {
         return message.reply("No output found.");
       }
+    });
 
-      await message.reply({
-        content: "Restarted Successfully!",
-      });
-     }
-    );
+    await msg.edit("Restarted.");
   },
 };
