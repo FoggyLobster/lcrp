@@ -19,9 +19,7 @@ function formatTime(ms) {
   let text = "";
 
   if (hours) text += `${hours}hr `;
-
   if (m) text += `${m}m `;
-
   if (s) text += `${s}s`;
 
   return text.trim();
@@ -33,57 +31,55 @@ module.exports = {
   async execute(interaction) {
     const userId = interaction.user.id;
 
-    const isOnline = db
-      .prepare("SELECT * FROM shifts WHERE user_id = ? AND status = 'online'")
+    const shift = db
+      .prepare(
+        `
+        SELECT *
+        FROM shifts
+        WHERE user_id = ?
+        AND status = 'online'
+        LIMIT 1
+      `,
+      )
       .get(userId);
 
-    if (!isOnline) {
+    if (!shift) {
       return interaction.reply({
         content: "You are not on shift.",
         ephemeral: true,
       });
     }
 
-    const wave = db
-      .prepare(
-        `
-      SELECT *
-      FROM shift_wave
-      WHERE status = 'active'
-      ORDER BY id DESC
-      LIMIT 1
-    `,
-      )
-      .get();
-
-    const waveId = wave ? wave.wave_id : "None";
+    const sessionTime = Date.now() - shift.started_at;
 
     db.prepare(
       `
       UPDATE shifts
-      SET status = 'offline',
-          ended_at = ?
-      WHERE user_id = ?
-    `,
-    ).run(Date.now(), userId);
+      SET
+        status = 'offline',
+        ended_at = ?,
+        total_time = total_time + ?
+      WHERE id = ?
+      `,
+    ).run(Date.now(), sessionTime, shift.id);
 
     const total = db
       .prepare(
         `
-      SELECT SUM(total_time) AS time
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+      `,
       )
       .get(userId);
 
     const count = db
       .prepare(
         `
-      SELECT COUNT(*) AS count
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT COUNT(*) AS count
+        FROM shifts
+        WHERE user_id = ?
+      `,
       )
       .get(userId);
 
@@ -92,9 +88,17 @@ module.exports = {
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status** On Break
-**Total Shift Time** ${formatTime(total.time)}
-**Total Shifts** ${count.count}`,
+**Shift Status**
+Offline
+
+**Last Shift Time**
+${formatTime(sessionTime)}
+
+**Total Shift Time**
+${formatTime(total.time)}
+
+**Total Shifts**
+${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(

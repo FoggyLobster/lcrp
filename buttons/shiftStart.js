@@ -40,7 +40,7 @@ module.exports = {
   customId: "shift_start",
 
   async execute(interaction) {
-    const user = interaction.user;
+    const userId = interaction.user;
 
     const active = db
       .prepare(
@@ -52,7 +52,7 @@ module.exports = {
       LIMIT 1
     `,
       )
-      .get(user.id);
+      .get(userId);
 
     if (active) {
       return interaction.reply({
@@ -89,7 +89,7 @@ module.exports = {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
-    ).run(genShiftId(), waveId, user.id, "online", Date.now(), 0, 1);
+    ).run(genShiftId(), waveId, userId, "online", Date.now(), 0, 1);
 
     const total = db
       .prepare(
@@ -99,7 +99,7 @@ module.exports = {
       WHERE user_id = ?
     `,
       )
-      .get(user.id);
+      .get(userId);
 
     const count = db
       .prepare(
@@ -109,9 +109,7 @@ module.exports = {
       WHERE user_id = ?
     `,
       )
-      .get(user.id);
-
-    const userId = user.id;
+      .get(userId);
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")

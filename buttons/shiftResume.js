@@ -6,27 +6,46 @@ const {
   ButtonStyle,
 } = require("discord.js");
 
+function formatTime(ms) {
+  if (!ms || ms <= 0) return "0s";
+
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  const s = seconds % 60;
+  const m = minutes % 60;
+
+  let text = "";
+
+  if (hours) text += `${hours}hr `;
+  if (m) text += `${m}m `;
+  if (s) text += `${s}s`;
+
+  return text.trim();
+}
+
 module.exports = {
   customId: "shift_resume",
 
   async execute(interaction) {
-    const user = interaction.user;
+    const userId = interaction.user.id;
 
-    const active = db
+    const shift = db
       .prepare(
         `
-      SELECT *
-      FROM shifts
-      WHERE user_id = ?
-      AND status = 'online'
-      LIMIT 1
-    `,
+        SELECT *
+        FROM shifts
+        WHERE user_id = ?
+        AND status = 'break'
+        LIMIT 1
+      `,
       )
-      .get(user.id);
+      .get(userId);
 
-    if (!active) {
+    if (!shift) {
       return interaction.reply({
-        content: "You are not on shift.",
+        content: "You are not currently on break.",
         ephemeral: true,
       });
     }
@@ -35,40 +54,52 @@ module.exports = {
       `
       UPDATE shifts
       SET status = 'online'
-      WHERE user_id = ?
+      WHERE id = ?
     `,
-    ).run(user.id);
+    ).run(shift.id);
+
+    db.prepare(
+      `
+      UPDATE shifts_breaks
+      SET ended_at = ?
+      WHERE user_id = ?
+      AND ended_at IS NULL
+    `,
+    ).run(Date.now(), userId);
 
     const total = db
       .prepare(
         `
-      SELECT SUM(total_time) AS time
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+      `,
       )
-      .get(user.id);
+      .get(userId);
 
     const count = db
       .prepare(
         `
-      SELECT COUNT(*) AS count
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT COUNT(*) AS count
+        FROM shifts
+        WHERE user_id = ?
+      `,
       )
-      .get(user.id);
-
-    const userId = user.id;
+      .get(userId);
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status** On Break
-**Total Shift Time** ${formatTime(total.time)}
-**Total Shifts** ${count.count}`,
+**Shift Status**
+Online
+
+**Total Shift Time**
+${formatTime(total.time)}
+
+**Total Shifts**
+${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(
@@ -76,7 +107,7 @@ module.exports = {
         .setCustomId("shift_start")
         .setLabel("Start Shift")
         .setStyle(ButtonStyle.Success)
-        .setDisabled(false),
+        .setDisabled(true),
 
       new ButtonBuilder()
         .setCustomId("shift_break")
