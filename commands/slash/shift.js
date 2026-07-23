@@ -141,7 +141,7 @@ module.exports = {
         Status = "Offline";
       }
 
-      const totalTime = db
+      const total_time = db
         .prepare(
           `
         SELECT SUM(total_time) AS time
@@ -150,6 +150,8 @@ module.exports = {
       `,
         )
         .get(user.id);
+
+      const totalTime = total_time ? total_time.time : 0;
 
       const embed = new EmbedBuilder()
         .setTitle("Shift Management")

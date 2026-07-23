@@ -87,15 +87,17 @@ module.exports = {
       )
       .get(userId);
 
-    const totalTime = db
+    const total_time = db
       .prepare(
         `
-      SELECT SUM(total_time) AS time
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+      `,
       )
-      .get(userId);
+      .get(user.id);
+
+    const totalTime = total_time ? total_time.time : 0;
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
