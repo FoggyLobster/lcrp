@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS shift_wave (
 `,
 ).run();
 
+db.prepare(`DROP TABLE IF EXISTS shifts`).run();
+
 db.prepare(
   `
 CREATE TABLE IF NOT EXISTS shifts (
