@@ -41,7 +41,7 @@ module.exports = {
       `
       INSERT INTO shifts (
         user_id,
-        shift_id,
+        id,
         started_at,
         total_time,
         status
