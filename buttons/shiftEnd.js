@@ -83,14 +83,24 @@ module.exports = {
       )
       .get(userId);
 
+    const totalTime = db
+      .prepare(
+        `
+      SELECT SUM(total_time) AS time
+      FROM shifts
+      WHERE user_id = ?
+    `,
+      )
+      .get(userId);
+
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status** Offline
-**Total Shift Time** ${formatTime(total.time)}
-**Total Shifts** ${count.count}`,
+**Shift Status:** Offline
+**Total Shift Time:** ${formatTime(totalTime)}
+**Total Shifts:** ${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(
