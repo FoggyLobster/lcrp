@@ -245,11 +245,9 @@ ${count.count}`,
     }
 
     if (sub === "admin") {
-      const isAdmin = interaction.member.permissions.has(
-        PermissionFlagsBits.Administrator,
-      );
-
-      if (!isAdmin) {
+      if (
+        !interaction.member.permissions.has(PermissionFlagsBits.Administrator)
+      ) {
         return interaction.reply({
           content: "You do not have permission.",
           ephemeral: true,
@@ -259,44 +257,65 @@ ${count.count}`,
       const user = interaction.options.getUser("user");
 
       const active = db
-        .prepare("SELECT * FROM shifts WHERE user_id = ? AND status = 'online'")
+        .prepare(
+          `
+        SELECT *
+        FROM shifts
+        WHERE user_id = ?
+        AND status = 'online'
+        ORDER BY id DESC
+        LIMIT 1
+    `,
+        )
         .get(user.id);
 
       const shifts = db
         .prepare(
-          `SELECT *
-                FROM shifts
-                WHERE user_id = ?
-                ORDER BY id DESC
-            `,
+          `
+        SELECT *
+        FROM shifts
+        WHERE user_id = ?
+        ORDER BY id DESC
+    `,
         )
         .all(user.id);
 
-      const data = db
-        .prepare(`SELECT * FROM shifts WHERE user_id = ?`)
-        .all(user.id);
+      const totalTime = shifts.reduce(
+        (total, shift) => total + shift.total_time,
+        0,
+      );
 
-      const shiftsFormatted = `\`${i + 1}\`. <@${user.id}> - #${data[0].shift_id} - ${formatTime(data.total_time)}`;
+      const wave = db
+        .prepare(
+          `
+        SELECT *
+        FROM shift_wave
+        WHERE status = 'active'
+        ORDER BY id DESC
+        LIMIT 1
+    `,
+        )
+        .get();
 
-      const activity = active ? "Online" : "Offline";
+      const waveId = wave ? wave.wave_id : "None";
 
       const embed = new EmbedBuilder()
         .setTitle("Shift Administration")
-        .setDiscription(
+        .setDescription(
           `Managing <@${user.id}>'s shift
 
-**Shift Status:** ${activity}
+**Shift Status:**
+${active ? "Online" : "Offline"}
 
-**Total Shift Time For This Wave (Wave #${waveId}):** ${formatTime(data.total_time)}
+**Total Shift Time For This Wave (Wave #${waveId})**
+${formatTime(totalTime)}
 
-**Total Shifts:** ${data.total_shifts}
-
-**Actions:**
-`,
+**Total Shifts**
+${shifts.length}`,
         )
         .setColor(0xff0000);
 
-      const selectMenu = new ActionRowBuilder().addComponents(
+      const menu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`shift_admin_actions:${user.id}`)
           .setPlaceholder("Select an action")
@@ -304,29 +323,30 @@ ${count.count}`,
             {
               label: "Start Shift",
               value: "start",
-              description: "Starts the shift",
+              description: "Start this user's shift",
             },
             {
-              label: "Take a Break",
+              label: "Take Break",
               value: "break",
-              description: "Takes a break",
+              description: "Put user on break",
             },
             {
               label: "End Shift",
               value: "end",
-              description: "Ends the shift",
+              description: "End this user's shift",
             },
             {
               label: "View Shifts",
               value: "view_shifts",
-              description: `View all shifts for this wave (${waveId})`,
+              description: "View shift history",
             },
           ]),
       );
 
-      return interaction.editReply({
+      return interaction.reply({
         embeds: [embed],
-        components: [selectMenu],
+        components: [menu],
+        ephemeral: true,
       });
     }
   },

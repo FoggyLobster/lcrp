@@ -29,28 +29,44 @@ db.prepare(
   );
 `,
 ).run();
-
 db.prepare(
   `
-  CREATE TABLE IF NOT EXISTS shifts (
-    id INTEGER PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'offline',
+CREATE TABLE IF NOT EXISTS shift_wave (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    wave_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
     started_at INTEGER NOT NULL,
-    total_time INTEGER NOT NULL,
-    total_shifts INTEGER NOT NULL
-  );
+    ended_at INTEGER
+);
 `,
 ).run();
 
 db.prepare(
   `
-  CREATE TABLE IF NOT EXISTS shifts_breaks (
-    id INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS shifts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shift_id TEXT NOT NULL,
+    wave_id TEXT,
+    user_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'offline',
+    started_at INTEGER NOT NULL,
+    ended_at INTEGER,
+    total_time INTEGER NOT NULL DEFAULT 0,
+    total_shifts INTEGER NOT NULL DEFAULT 0
+);
+`,
+).run();
+
+db.prepare(
+  `
+CREATE TABLE IF NOT EXISTS shifts_breaks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shift_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
     started_at INTEGER NOT NULL,
-    ended_at INTEGER NOT NULL
-  );
+    ended_at INTEGER,
+    duration INTEGER DEFAULT 0
+);
 `,
 ).run();
 
