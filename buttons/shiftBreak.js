@@ -12,45 +12,72 @@ module.exports = {
   async execute(interaction) {
     const userId = interaction.user.id;
 
-    const shift = db
+    const isOnline = db
       .prepare("SELECT * FROM shifts WHERE user_id = ? AND status = 'online'")
       .get(userId);
 
-    if (!shift) {
+    if (!isOnline) {
       return interaction.reply({
-        content: "You are not currently on shift.",
+        content: "You are not on shift.",
         ephemeral: true,
       });
     }
 
-    const now = Date.now();
+    const wave = db
+      .prepare(
+        `
+      SELECT *
+      FROM shift_wave
+      WHERE status = 'active'
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+      )
+      .get();
+
+    const waveId = wave ? wave.wave_id : "None";
 
     db.prepare(
       `
-      INSERT INTO shifts_breaks (
-        user_id,
+      INSERT INTO shifts_breaks
+      (
         shift_id,
-        started_at
+        user_id,
+        started_at,
+        duration
       )
-      VALUES (?, ?, ?)
-      `,
-    ).run(userId, shift.id, now);
+      VALUES (?, ?, ?, ?)
+    `,
+    ).run(genShiftId(), userId, Date.now(), 0);
 
-    const user = await interaction.user.fetch();
+    const total = db
+      .prepare(
+        `
+      SELECT SUM(total_time) AS time
+      FROM shifts
+      WHERE user_id = ?
+    `,
+      )
+      .get(userId);
+
+    const count = db
+      .prepare(
+        `
+      SELECT COUNT(*) AS count
+      FROM shifts
+      WHERE user_id = ?
+    `,
+      )
+      .get(userId);
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
-        `Hey, <@${user.id}>. You are now managing your Shift
-    
-    **Shift Status**
-    ${active ? "Online" : "Offline"}
-    
-    **Total Shift Time For This Wave (Wave #${waveId})**
-    ${formatTime(total.time)}
-    
-    **Total Shifts**
-    ${count.count}`,
+        `Hey, <@${userId}>. You are now managing your shift.
+
+**Shift Status** On Break
+**Total Shift Time** ${formatTime(total.time)}
+**Total Shifts** ${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(
@@ -58,27 +85,24 @@ module.exports = {
         .setCustomId("shift_start")
         .setLabel("Start Shift")
         .setStyle(ButtonStyle.Success)
-        .setDisabled(True),
+        .setDisabled(false),
 
       new ButtonBuilder()
-        .setCustomId("shift_resume")
-        .setLabel("Resume Shift")
-        .setStyle(ButtonStyle.Secondary),
+        .setCustomId("shift_break")
+        .setLabel("Take a Break")
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(false),
 
       new ButtonBuilder()
         .setCustomId("shift_end")
         .setLabel("End Shift")
         .setStyle(ButtonStyle.Danger)
-        .setDisabled(True),
+        .setDisabled(false),
     );
 
-    await interaction.edit({
+    return interaction.update({
       embeds: [embed],
-    });
-
-    await interaction.reply({
-      content: "Your break has started.",
-      ephemeral: true,
+      components: [buttons],
     });
   },
 };

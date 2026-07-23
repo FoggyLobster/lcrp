@@ -33,46 +33,68 @@ module.exports = {
   async execute(interaction) {
     const userId = interaction.user.id;
 
-    const shift = db
+    const isOnline = db
       .prepare("SELECT * FROM shifts WHERE user_id = ? AND status = 'online'")
       .get(userId);
 
-    if (!shift) {
+    if (!isOnline) {
       return interaction.reply({
-        content: "You do not have an active shift.",
+        content: "You are not on shift.",
         ephemeral: true,
       });
     }
 
-    const ended = Date.now();
+    const wave = db
+      .prepare(
+        `
+      SELECT *
+      FROM shift_wave
+      WHERE status = 'active'
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+      )
+      .get();
 
-    const totalTime = ended - shift.started_at;
+    const waveId = wave ? wave.wave_id : "None";
 
     db.prepare(
       `
       UPDATE shifts
-      SET 
-        status = 'ended',
-        total_time = ?
-      WHERE id = ?
-      `,
-    ).run(totalTime, shift.id);
+      SET status = 'offline',
+          ended_at = ?
+      WHERE user_id = ?
+    `,
+    ).run(Date.now(), userId);
 
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+    const total = db
+      .prepare(
+        `
+      SELECT SUM(total_time) AS time
+      FROM shifts
+      WHERE user_id = ?
+    `,
+      )
+      .get(userId);
+
+    const count = db
+      .prepare(
+        `
+      SELECT COUNT(*) AS count
+      FROM shifts
+      WHERE user_id = ?
+    `,
+      )
+      .get(userId);
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
-        `Hey, <@${user.id}>. You are now managing your Shift
-    
-    **Shift Status**
-    ${active ? "Online" : "Offline"}
-    
-    **Total Shift Time For This Wave (Wave #${waveId})**
-    ${formatTime(total.time)}
-    
-    **Total Shifts**
-    ${count.count}`,
+        `Hey, <@${userId}>. You are now managing your shift.
+
+**Shift Status** On Break
+**Total Shift Time** ${formatTime(total.time)}
+**Total Shifts** ${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(
@@ -80,47 +102,24 @@ module.exports = {
         .setCustomId("shift_start")
         .setLabel("Start Shift")
         .setStyle(ButtonStyle.Success)
-        .setDisabled(False),
+        .setDisabled(false),
 
       new ButtonBuilder()
         .setCustomId("shift_break")
         .setLabel("Take a Break")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(True),
+        .setDisabled(false),
 
       new ButtonBuilder()
         .setCustomId("shift_end")
         .setLabel("End Shift")
         .setStyle(ButtonStyle.Danger)
-        .setDisabled(True),
+        .setDisabled(false),
     );
 
-    await interaction.edit({
+    return interaction.update({
       embeds: [embed],
+      components: [buttons],
     });
-
-    await interaction.reply({
-      content: "Your shift has ended.",
-      ephemeral: true,
-    });
-
-    try {
-      await interaction.user.send({
-        embeds: [
-          {
-            title: "Shift Completed",
-            description:
-              `Your shift has ended.\n\n` +
-              `**Shift ID:** ${shift.shift_id}\n` +
-              `**Time Worked:** ${formatTime(totalTime)}\n` +
-              `**Started:** <t:${Math.floor(shift.started_at / 1000)}:F>\n` +
-              `**Ended:** <t:${Math.floor(ended / 1000)}:F>`,
-            color: 0xff0000,
-          },
-        ],
-      });
-    } catch {
-      console.log(`Could not DM ${interaction.user.tag}`);
-    }
   },
 };
