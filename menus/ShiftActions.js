@@ -8,12 +8,12 @@ const {
 } = require("discord.js");
 
 const db = require("../db");
-const [, userId] = interaction.customId.split(":");
 
 module.exports = {
   customId: `shift_admin_actions:${userId}`,
 
   async execute(interaction) {
+    const [, userId] = interaction.customId.split(":");
     const user = interaction.guild.members.fetch(userId).catch(() => null);
 
     const selected = interaction.values[0];
