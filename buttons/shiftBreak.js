@@ -148,7 +148,7 @@ module.exports = {
         .setStyle(ButtonStyle.Danger),
     );
 
-    interaction.update({
+    interaction.edit({
       embeds: [embed],
       components: [buttons],
     });
