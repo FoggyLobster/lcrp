@@ -48,11 +48,11 @@ module.exports = {
       SELECT *
       FROM shifts
       WHERE user_id = ?
-      AND status = 'online'
+      AND status = ?
       LIMIT 1
     `,
       )
-      .get(userId);
+      .get(userId, "online");
 
     if (active) {
       return interaction.reply({
