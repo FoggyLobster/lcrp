@@ -129,12 +129,16 @@ module.exports = {
 
       const waveId = wave ? wave.wave_id : "None";
 
+      const status = db
+        .prepare("SELECT status FROM shifts WHERE user_id = ?")
+        .get(user.id);
+
       const embed = new EmbedBuilder()
         .setTitle("Shift Management")
         .setDescription(
           `Hey, <@${user.id}>. You are now managing your Shift
 
-**Shift Status** ${active ? "Online" : "Offline"}
+**Shift Status** ${status}
 **Total Time** ${formatTime(total.time)}
 **Total Shifts** ${count.count}`,
         );
