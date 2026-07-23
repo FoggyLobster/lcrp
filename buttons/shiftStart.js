@@ -40,7 +40,7 @@ module.exports = {
   customId: "shift_start",
 
   async execute(interaction) {
-    const userId = interaction.user;
+    const userId = interaction.user.id;
 
     const active = db
       .prepare(
