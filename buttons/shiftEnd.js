@@ -108,13 +108,13 @@ module.exports = {
         .setCustomId("shift_break")
         .setLabel("Take a Break")
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(false),
+        .setDisabled(true),
 
       new ButtonBuilder()
         .setCustomId("shift_end")
         .setLabel("End Shift")
         .setStyle(ButtonStyle.Danger)
-        .setDisabled(false),
+        .setDisabled(true),
     );
 
     return interaction.update({
