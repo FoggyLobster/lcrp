@@ -1,0 +1,38 @@
+{
+  "smoothtype.duration": 80,
+  "extention.enableAnimation": true,
+  "smoothtype.autoReload": false,
+  "smoothtype.enabled": true,
+  "smoothtype.mode": "ease",
+  "smoothtype.lineDurationMultiplier": 1.0,
+  "smoothtype.confirmReload": true,
+  "github.copilot.enable": {
+    "*": true
+  },
+  "inlineSuggest.enabled": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggest.showInlineDetails": true,
+  "editor.quickSuggestionsDelay": 0,
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.suggest.preview": true,
+  "editor.suggest.previewMode": "subtle",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.cursorBlinking": "smooth",
+  "editor.fontLigatures": true,
+  "editor.letterSpacing": 0.5,
+  "editor.cursorWidth": 2,
+  "editor.stablePeek": true,
+  "workbench.editor.enablePreview": false,
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "discord.enabled": true
+}
