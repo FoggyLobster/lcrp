@@ -68,6 +68,12 @@ module.exports = {
       subcommand
         .setName("void")
         .setDescription("Remove an infraction.")
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to void the infraction from.")
+            .setRequired(true),
+        )
         .addStringOption((option) =>
           option
             .setName("id")
@@ -253,15 +259,7 @@ module.exports = {
         });
       }
 
-      const infractedUser = db
-        .prepare(
-          `
-        SELECT * FROM infractions WHERE id = ?
-        `,
-        )
-        .all(id);
-
-      const user = await interaction.guild.users.fetch(user.user_id);
+      const user = interaction.options.getUser("user");
 
       await user
         .send({
