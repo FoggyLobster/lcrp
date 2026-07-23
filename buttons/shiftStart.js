@@ -79,7 +79,7 @@ module.exports = {
       `
       INSERT INTO shifts
       (
-        shiftt_id,
+        shift_id,
         wave_id,
         user_id,
         status,
