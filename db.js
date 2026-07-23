@@ -60,7 +60,6 @@ db.prepare(
   CREATE TABLE IF NOT EXISTS shifts_breaks (
     id INTEGER PRIMARY KEY,
     user_id TEXT NOT NULL,
-    reason TEXT NOT NULL,
     started_at INTEGER NOT NULL,
     ended_at INTEGER NOT NULL,
 );

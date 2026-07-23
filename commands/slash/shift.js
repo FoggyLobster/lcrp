@@ -298,32 +298,28 @@ ${count.count}`,
 
       const selectMenu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
-          .setCustomId("shift_user_actions")
+          .setCustomId(`shift_admin_actions:${user.id}`)
           .setPlaceholder("Select an action")
           .addOptions([
             {
               label: "Start Shift",
               value: "start",
               description: "Starts the shift",
-              emoji: "✅",
             },
             {
               label: "Take a Break",
               value: "break",
               description: "Takes a break",
-              emoji: "⏸",
             },
             {
               label: "End Shift",
               value: "end",
               description: "Ends the shift",
-              emoji: "❌",
             },
             {
               label: "View Shifts",
               value: "view_shifts",
               description: `View all shifts for this wave (${waveId})`,
-              emoji: "📝",
             },
           ]),
       );
