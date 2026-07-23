@@ -116,7 +116,7 @@ module.exports = {
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status** On Break
+**Shift Status** Online
 **Total Shift Time** ${formatTime(total.time)}
 **Total Shifts** ${count.count}`,
       );

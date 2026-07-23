@@ -115,14 +115,9 @@ module.exports = {
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status**
-On Break
-
-**Total Shift Time**
-${formatTime(total.time)}
-
-**Total Shifts**
-${count.count}`,
+**Shift Status** On Break
+**Total Shift Time** ${formatTime(total.time)}
+**Total Shifts** ${count.count}`,
       );
 
     const buttons = new ActionRowBuilder().addComponents(
