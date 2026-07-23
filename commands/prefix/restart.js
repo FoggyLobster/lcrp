@@ -1,31 +1,25 @@
 const { exec } = require("child_process");
-const { EmbedBuilder } = require("discord.js");
 
 module.exports = {
   name: "restart",
-  description: "Restarts the bot.",
-  async execute(message, args) {
+
+  async execute(message) {
     const isOwner = message.member.id === "1062166609931804702";
+
     if (!isOwner) {
-      return message.reply("You do not have permission to use this command.");
+      return message.reply("How bout no.");
     }
 
-    const msg = await message.reply("Restarting...");
+    const msg = await message.reply("Restarting, please wait...");
 
-    exec("pm2 restart lcrp", (error, stdout, stderr) => {
-      if (error) {
-        return message.reply(
-          `Failed to restart bot:\n\`\`\`\n${error.message}\n\`\`\``,
-        );
-      }
+    setTimeout(() => {
+      exec("git pull && pm2 restart lcrp", (error) => {
+        if (error) {
+          console.error("PM2 sync failed:", error);
+        }
+      });
+    }, 1000);
 
-      const output = (stdout || stderr).trim();
-
-      if (!output) {
-        return message.reply("No output found.");
-      }
-    });
-
-    await msg.edit("Restarted.");
+    msg.edit("Restarted Successfully!");
   },
 };
