@@ -133,13 +133,31 @@ module.exports = {
         .prepare("SELECT status FROM shifts WHERE user_id = ?")
         .get(user.id);
 
+      if (status === "break") {
+        Status = "On Break";
+      } else if (status === "online") {
+        Status = "Online";
+      } else {
+        Status = "Offline";
+      }
+
+      const totalTime = db
+        .prepare(
+          `
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+      `,
+        )
+        .get(user.id);
+
       const embed = new EmbedBuilder()
         .setTitle("Shift Management")
         .setDescription(
           `Hey, <@${user.id}>. You are now managing your Shift
 
-**Shift Status** ${status}
-**Total Time** ${formatTime(total.time)}
+**Shift Status** ${Status}
+**Total Time** ${formatTime(totalTime)}
 **Total Shifts** ${count.count}`,
         );
 
