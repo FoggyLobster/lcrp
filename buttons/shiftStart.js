@@ -89,7 +89,7 @@ module.exports = {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
-    ).run(genShiftId(), waveId, userId, "online", Date.now(), 0, 1);
+    ).run(genShiftId(), waveId, userId, `online`, Date.now(), 0, 1);
 
     const total = db
       .prepare(
