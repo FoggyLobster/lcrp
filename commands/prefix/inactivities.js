@@ -19,6 +19,8 @@ const RANK_REQUIREMENTS = [
   },
 ];
 
+const LOG_CHANNEL_ID = "1529940408950456381";
+
 function formatTime(ms) {
   if (!ms || ms <= 0) return "0s";
 
@@ -61,7 +63,7 @@ function genId() {
 module.exports = {
   name: "inactivities",
 
-  async execute(message) {
+  async execute(client, message) {
     if (!message.member.permissions.has("Administrator")) {
       return message.reply({
         content: "You do not have permission.",
@@ -75,6 +77,7 @@ module.exports = {
     });
 
     const infractions = [];
+    let checked = 0;
 
     for (const member of message.guild.members.cache.values()) {
       if (member.user.bot) {
@@ -89,13 +92,15 @@ module.exports = {
         continue;
       }
 
+      checked++;
+
       const result = db
         .prepare(
           `
-                SELECT SUM(total_time) AS time
-                FROM shifts
-                WHERE user_id = ?
-            `,
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+      `,
         )
         .get(member.id);
 
@@ -105,35 +110,32 @@ module.exports = {
         continue;
       }
 
-      const missing = rank.required - totalTime;
+      const infractionId = genId();
 
-      const existing = db
+      const previous = db
         .prepare(
           `
-                SELECT *
-                FROM infractions
-                WHERE user_id = ?
-                AND infraction_type = ?
-            `,
+        SELECT COUNT(*) AS count
+        FROM infractions
+        WHERE user_id = ?
+      `,
         )
-        .get(member.id, "Inactivity");
-
-      const infractionId = genId();
+        .get(member.id);
 
       db.prepare(
         `
-                INSERT INTO infractions
-                (
-                    id,
-                    user_id,
-                    infraction_type,
-                    reason,
-                    issued_by,
-                    issued_at,
-                    total_infractions
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `,
+        INSERT INTO infractions
+        (
+          id,
+          user_id,
+          infraction_type,
+          reason,
+          issued_by,
+          issued_at,
+          total_infractions
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
       ).run(
         infractionId,
         member.id,
@@ -141,7 +143,7 @@ module.exports = {
         "Failed to meet required shift quota",
         "System",
         Date.now(),
-        existing ? existing.total_infractions + 1 : 1,
+        previous.count + 1,
       );
 
       const embed = new EmbedBuilder()
@@ -158,11 +160,8 @@ ${formatTime(rank.required)}
 **Completed Activity**
 ${formatTime(totalTime)}
 
-**Missing**
-${formatTime(missing)}
-
 **Infraction ID**
-${infractionId}
+\`${infractionId}\`
 
 Please complete your required activity time.`,
         )
@@ -175,21 +174,86 @@ Please complete your required activity time.`,
         })
         .catch(() => {});
 
-      infractions.push(
-        `<@${member.id}> - ${rank.name} - ${formatTime(totalTime)}`,
-      );
+      infractions.push({
+        member,
+        rank,
+        totalTime,
+        id: infractionId,
+      });
     }
 
     const resultEmbed = new EmbedBuilder()
       .setTitle("Inactivity Check Complete")
       .setDescription(
-        infractions.length ? infractions.join("\n") : "No infractions issued.",
+        infractions.length
+          ? infractions
+              .map(
+                (i) =>
+                  `<@${i.member.id}> 
+Rank: ${i.rank.name}
+Time: ${formatTime(i.totalTime)}
+ID: \`${i.id}\``,
+              )
+              .join("\n\n")
+          : "No infractions issued.",
+      )
+      .addFields(
+        {
+          name: "Staff Checked",
+          value: `${checked}`,
+          inline: true,
+        },
+        {
+          name: "Infractions Issued",
+          value: `${infractions.length}`,
+          inline: true,
+        },
       )
       .setColor(0xff0000)
       .setTimestamp();
 
-    return message.channel.send({
+    await message.channel.send({
       embeds: [resultEmbed],
     });
+
+    const logChannel = await message.guild.channels
+      .fetch(LOG_CHANNEL_ID)
+      .catch(() => null);
+
+    if (logChannel?.isTextBased()) {
+      const logEmbed = new EmbedBuilder()
+        .setTitle("Inactivity System Log")
+        .setDescription(
+          `An inactivity check has been completed.
+
+**Executed By**
+${message.author}
+
+**Staff Checked**
+${checked}
+
+**Infractions Issued**
+${infractions.length}`,
+        )
+        .setColor(0xff0000)
+        .setTimestamp();
+
+      if (infractions.length) {
+        logEmbed.addFields({
+          name: "Issued Infractions",
+          value: infractions
+            .map(
+              (i) =>
+                `<@${i.member.id}> - ${i.rank.name} - ${formatTime(i.totalTime)} - \`${i.id}\``,
+            )
+            .join("\n")
+            .slice(0, 1024),
+        });
+      }
+
+      await logChannel.send({
+        embeds: [logEmbed],
+      });
+    }
   },
 };
