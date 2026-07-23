@@ -3,7 +3,7 @@ const { exec } = require("child_process");
 module.exports = {
   name: "restart",
 
-  async execute(message) {
+  async execute(client, message) {
     const isOwner = message.member.id === "1062166609931804702";
 
     if (!isOwner) {
