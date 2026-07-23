@@ -134,14 +134,9 @@ module.exports = {
         .setDescription(
           `Hey, <@${user.id}>. You are now managing your Shift
 
-**Shift Status**
-${active ? "Online" : "Offline"}
-
-**Total Shift Time For This Wave (Wave #${waveId})**
-${formatTime(total.time)}
-
-**Total Shifts**
-${count.count}`,
+**Shift Status** ${active ? "Online" : "Offline"}
+**Total Time** ${formatTime(total.time)}
+**Total Shifts** ${count.count}`,
         );
 
       const userId = interaction.user.id;
@@ -304,16 +299,12 @@ ${count.count}`,
         .setDescription(
           `Managing <@${user.id}>'s shift
 
-**Shift Status:**
-${active ? "Online" : "Offline"}
-
-**Total Shift Time For This Wave (Wave #${waveId})**
-${formatTime(totalTime)}
-
-**Total Shifts**
-${shifts.length}`,
+**Shift Status:** ${active ? "Online" : "Offline"}
+**Total Shift Time:** ${formatTime(totalTime)}
+**Total Shifts:** ${shifts.length}`,
         )
-        .setColor(0xff0000);
+        .setColor(0xff0000)
+        .setFooter({ text: `${user.username}` });
 
       const menu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()

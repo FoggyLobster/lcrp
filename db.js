@@ -70,4 +70,18 @@ CREATE TABLE IF NOT EXISTS shifts_breaks (
 `,
 ).run();
 
+db.prepare(
+  `
+  CREATE TABLE IF NOT EXISTS infractions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    infraction_type TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    issued_by TEXT NOT NULL,
+    issued_at INTEGER NOT NULL,
+    total_infractions INTEGER DEFAULT 1
+);
+  `,
+).run();
+
 module.exports = db;
