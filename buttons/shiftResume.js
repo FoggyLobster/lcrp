@@ -59,6 +59,8 @@ module.exports = {
       )
       .get(user.id);
 
+    const userId = user.id;
+
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
