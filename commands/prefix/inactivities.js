@@ -4,17 +4,17 @@ const db = require("../../db");
 const RANK_REQUIREMENTS = [
   {
     name: "Moderator",
-    roleId: "MODERATOR_ROLE_ID",
+    roleId: "1529307204987912343",
     required: 90 * 60 * 1000,
   },
   {
     name: "Administrator",
-    roleId: "ADMINISTRATOR_ROLE_ID",
+    roleId: "1529307197400547469",
     required: 2 * 60 * 60 * 1000,
   },
   {
     name: "IA",
-    roleId: "IA_ROLE_ID",
+    roleId: "1529308324724736030",
     required: 60 * 60 * 1000,
   },
 ];
