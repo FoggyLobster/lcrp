@@ -111,6 +111,18 @@ module.exports = {
       )
       .get(userId);
 
+    const status = db
+      .prepare("SELECT status FROM shifts WHERE user_id = ?")
+      .get(user.id);
+
+    if (status === "break") {
+      Status = "On Break";
+    } else if (status === "online") {
+      Status = "Online";
+    } else {
+      Status = "Offline";
+    }
+
     const total_time = db
       .prepare(
         `
@@ -128,7 +140,7 @@ module.exports = {
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status:** Online
+**Shift Status:** ${Status}
 **Total Shift Time:** ${formatTime(totalTime)}
 **Total Shifts:** ${count.count}`,
       );

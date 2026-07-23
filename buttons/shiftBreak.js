@@ -122,12 +122,24 @@ module.exports = {
 
     const totalTime = total_time ? total_time.time : 0;
 
+    const status = db
+      .prepare("SELECT status FROM shifts WHERE user_id = ?")
+      .get(user.id);
+
+    if (status === "break") {
+      Status = "On Break";
+    } else if (status === "online") {
+      Status = "Online";
+    } else {
+      Status = "Offline";
+    }
+
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status:** On Break
+**Shift Status:** ${Status}
 **Total Shift Time:** ${formatTime(totalTime)}
 **Total Shifts:** ${count.count}`,
       );
