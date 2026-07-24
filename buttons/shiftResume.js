@@ -16,17 +16,38 @@ function formatTime(ms) {
   const s = seconds % 60;
   const m = minutes % 60;
 
-  let text = "";
+  let result = "";
 
-  if (hours) text += `${hours}hr `;
-  if (m) text += `${m}m `;
-  if (s) text += `${s}s`;
+  if (hours > 0) result += `${hours}hr `;
+  if (m > 0) result += `${m}m `;
+  if (s > 0) result += `${s}s`;
 
-  return text.trim();
+  return result.trim();
+}
+
+function getShiftStatus(userId) {
+  const shift = db
+    .prepare(
+      `
+      SELECT status
+      FROM shifts
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+    )
+    .get(userId);
+
+  if (!shift) return "Offline";
+
+  if (shift.status === "online") return "Online";
+  if (shift.status === "break") return "On Break";
+
+  return "Offline";
 }
 
 module.exports = {
-  customId: "shift_resume",
+  customId: "shift_break",
 
   async execute(interaction) {
     const userId = interaction.user.id;
@@ -37,15 +58,34 @@ module.exports = {
         SELECT *
         FROM shifts
         WHERE user_id = ?
-        AND status = 'break'
+        AND status = 'online'
+        ORDER BY id DESC
         LIMIT 1
-      `,
+        `,
       )
       .get(userId);
 
     if (!shift) {
       return interaction.reply({
-        content: "You are not currently on break.",
+        content: "You are not currently on shift.",
+        ephemeral: true,
+      });
+    }
+
+    const activeBreak = db
+      .prepare(
+        `
+        SELECT *
+        FROM shifts_breaks
+        WHERE shift_id = ?
+        AND ended_at IS NULL
+        `,
+      )
+      .get(shift.shift_id);
+
+    if (activeBreak) {
+      return interaction.reply({
+        content: "You are already on break.",
         ephemeral: true,
       });
     }
@@ -53,19 +93,24 @@ module.exports = {
     db.prepare(
       `
       UPDATE shifts
-      SET status = 'online'
+      SET status = 'break'
       WHERE id = ?
-    `,
+      `,
     ).run(shift.id);
 
     db.prepare(
       `
-      UPDATE shifts_breaks
-      SET ended_at = ?
-      WHERE user_id = ?
-      AND ended_at IS NULL
-    `,
-    ).run(Date.now(), userId);
+      INSERT INTO shifts_breaks
+      (
+        shift_id,
+        user_id,
+        started_at,
+        ended_at,
+        duration
+      )
+      VALUES (?, ?, ?, ?, ?)
+      `,
+    ).run(shift.shift_id, userId, Date.now(), null, 0);
 
     const total = db
       .prepare(
@@ -73,7 +118,7 @@ module.exports = {
         SELECT SUM(total_time) AS time
         FROM shifts
         WHERE user_id = ?
-      `,
+        `,
       )
       .get(userId);
 
@@ -83,43 +128,22 @@ module.exports = {
         SELECT COUNT(*) AS count
         FROM shifts
         WHERE user_id = ?
-      `,
+        `,
       )
       .get(userId);
 
-    const total_time = db
-      .prepare(
-        `
-        SELECT SUM(total_time) AS time
-        FROM shifts
-        WHERE user_id = ?
-      `,
-      )
-      .get(userId);
-
-    const status = db
-      .prepare("SELECT status FROM shifts WHERE user_id = ?")
-      .get(user.id);
-
-    if (status === "break") {
-      Status = "On Break";
-    } else if (status === "online") {
-      Status = "Online";
-    } else {
-      Status = "Offline";
-    }
-
-    const totalTime = total_time ? total_time.time : 0;
+    const totalTime = total.time || 0;
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status:** ${Status}
+**Shift Status:** ${getShiftStatus(userId)}
 **Total Shift Time:** ${formatTime(totalTime)}
 **Total Shifts:** ${count.count}`,
-      );
+      )
+      .setColor(0xffff00);
 
     const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -129,9 +153,9 @@ module.exports = {
         .setDisabled(true),
 
       new ButtonBuilder()
-        .setCustomId("shift_break")
-        .setLabel("Take a Break")
-        .setStyle(ButtonStyle.Secondary)
+        .setCustomId("shift_resume")
+        .setLabel("Resume Shift")
+        .setStyle(ButtonStyle.Primary)
         .setDisabled(false),
 
       new ButtonBuilder()
@@ -141,14 +165,9 @@ module.exports = {
         .setDisabled(false),
     );
 
-    interaction.update({
+    return interaction.update({
       embeds: [embed],
       components: [buttons],
-    });
-
-    return interaction.reply({
-      content: "Shift has resumed.",
-      ephemeral: true,
     });
   },
 };

@@ -16,13 +16,34 @@ function formatTime(ms) {
   const s = seconds % 60;
   const m = minutes % 60;
 
-  let text = "";
+  let result = "";
 
-  if (hours) text += `${hours}hr `;
-  if (m) text += `${m}m `;
-  if (s) text += `${s}s`;
+  if (hours > 0) result += `${hours}hr `;
+  if (m > 0) result += `${m}m `;
+  if (s > 0) result += `${s}s`;
 
-  return text.trim();
+  return result.trim();
+}
+
+function getShiftStatus(userId) {
+  const shift = db
+    .prepare(
+      `
+      SELECT status
+      FROM shifts
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+    )
+    .get(userId);
+
+  if (!shift) return "Offline";
+
+  if (shift.status === "online") return "Online";
+  if (shift.status === "break") return "On Break";
+
+  return "Offline";
 }
 
 module.exports = {
@@ -37,20 +58,55 @@ module.exports = {
         SELECT *
         FROM shifts
         WHERE user_id = ?
-        AND status = 'online'
+        AND status != 'offline'
+        ORDER BY id DESC
         LIMIT 1
-      `,
+        `,
       )
       .get(userId);
 
     if (!shift) {
       return interaction.reply({
-        content: "You are not on shift.",
+        content: "You are not currently on shift.",
         ephemeral: true,
       });
     }
 
-    const sessionTime = Date.now() - shift.started_at;
+    const now = Date.now();
+
+    let breakTime = 0;
+
+    const breaks = db
+      .prepare(
+        `
+        SELECT *
+        FROM shifts_breaks
+        WHERE shift_id = ?
+        `,
+      )
+      .all(shift.shift_id);
+
+    for (const shiftBreak of breaks) {
+      if (shiftBreak.ended_at) {
+        breakTime += shiftBreak.duration;
+      } else {
+        const duration = now - shiftBreak.started_at;
+
+        breakTime += duration;
+
+        db.prepare(
+          `
+          UPDATE shifts_breaks
+          SET
+            ended_at = ?,
+            duration = ?
+          WHERE id = ?
+          `,
+        ).run(now, duration, shiftBreak.id);
+      }
+    }
+
+    const workedTime = now - shift.started_at - breakTime;
 
     db.prepare(
       `
@@ -61,7 +117,7 @@ module.exports = {
         total_time = total_time + ?
       WHERE id = ?
       `,
-    ).run(Date.now(), sessionTime, shift.id);
+    ).run(now, workedTime > 0 ? workedTime : 0, shift.id);
 
     const total = db
       .prepare(
@@ -69,7 +125,7 @@ module.exports = {
         SELECT SUM(total_time) AS time
         FROM shifts
         WHERE user_id = ?
-      `,
+        `,
       )
       .get(userId);
 
@@ -79,43 +135,23 @@ module.exports = {
         SELECT COUNT(*) AS count
         FROM shifts
         WHERE user_id = ?
-      `,
+        `,
       )
       .get(userId);
 
-    const total_time = db
-      .prepare(
-        `
-        SELECT SUM(total_time) AS time
-        FROM shifts
-        WHERE user_id = ?
-      `,
-      )
-      .get(userId);
-
-    const status = db
-      .prepare("SELECT status FROM shifts WHERE user_id = ?")
-      .get(user.id);
-
-    if (status === "break") {
-      Status = "On Break";
-    } else if (status === "online") {
-      Status = "Online";
-    } else {
-      Status = "Offline";
-    }
-
-    const totalTime = total_time ? total_time.time : 0;
+    const totalTime = total.time || 0;
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status:** ${Status}
+**Shift Status:** ${getShiftStatus(userId)}
+**Shift Completed:** ${formatTime(workedTime)}
 **Total Shift Time:** ${formatTime(totalTime)}
 **Total Shifts:** ${count.count}`,
-      );
+      )
+      .setColor(0xff0000);
 
     const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -137,14 +173,9 @@ module.exports = {
         .setDisabled(true),
     );
 
-    interaction.update({
+    return interaction.update({
       embeds: [embed],
       components: [buttons],
-    });
-
-    return interaction.reply({
-      content: "Shift has ended.",
-      ephemeral: true,
     });
   },
 };

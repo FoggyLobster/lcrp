@@ -36,6 +36,27 @@ function formatTime(ms) {
   return result.trim();
 }
 
+function getShiftStatus(userId) {
+  const shift = db
+    .prepare(
+      `
+      SELECT status
+      FROM shifts
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+    )
+    .get(userId);
+
+  if (!shift) return "Offline";
+
+  if (shift.status === "online") return "Online";
+  if (shift.status === "break") return "On Break";
+
+  return "Offline";
+}
+
 module.exports = {
   customId: "shift_start",
 
@@ -45,14 +66,14 @@ module.exports = {
     const active = db
       .prepare(
         `
-      SELECT *
-      FROM shifts
-      WHERE user_id = ?
-      AND status = ?
-      LIMIT 1
-    `,
+        SELECT *
+        FROM shifts
+        WHERE user_id = ?
+        AND status != 'offline'
+        LIMIT 1
+        `,
       )
-      .get(userId, "online");
+      .get(userId);
 
     if (active) {
       return interaction.reply({
@@ -64,16 +85,18 @@ module.exports = {
     const wave = db
       .prepare(
         `
-      SELECT *
-      FROM shift_wave
-      WHERE status = 'active'
-      ORDER BY id DESC
-      LIMIT 1
-    `,
+        SELECT *
+        FROM shift_wave
+        WHERE status = 'active'
+        ORDER BY id DESC
+        LIMIT 1
+        `,
       )
       .get();
 
     const waveId = wave ? wave.wave_id : "None";
+
+    const shiftId = genShiftId();
 
     db.prepare(
       `
@@ -84,66 +107,44 @@ module.exports = {
         user_id,
         status,
         started_at,
+        ended_at,
         total_time,
         total_shifts
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `,
-    ).run(genShiftId(), waveId, userId, `online`, Date.now(), 0, 1);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).run(shiftId, waveId, userId, "online", Date.now(), null, 0, 1);
 
     const total = db
       .prepare(
         `
-      SELECT SUM(total_time) AS time
-      FROM shifts
-      WHERE user_id = ?
-    `,
+        SELECT SUM(total_time) AS time
+        FROM shifts
+        WHERE user_id = ?
+        `,
       )
       .get(userId);
 
     const count = db
       .prepare(
         `
-      SELECT COUNT(*) AS count
-      FROM shifts
-      WHERE user_id = ?
-    `,
-      )
-      .get(userId);
-
-    const status = db
-      .prepare("SELECT status FROM shifts WHERE user_id = ?")
-      .get(user.id);
-
-    if (status === "break") {
-      Status = "On Break";
-    } else if (status === "online") {
-      Status = "Online";
-    } else {
-      Status = "Offline";
-    }
-
-    const total_time = db
-      .prepare(
-        `
-        SELECT SUM(total_time) AS time
+        SELECT COUNT(*) AS count
         FROM shifts
         WHERE user_id = ?
-      `,
+        `,
       )
       .get(userId);
-
-    const totalTime = total_time ? total_time.time : 0;
 
     const embed = new EmbedBuilder()
       .setTitle("Shift Management")
       .setDescription(
         `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status:** ${Status}
-**Total Shift Time:** ${formatTime(totalTime)}
+**Shift Status:** ${getShiftStatus(userId)}
+**Total Shift Time:** ${formatTime(total.time)}
 **Total Shifts:** ${count.count}`,
-      );
+      )
+      .setColor(0x00ff00);
 
     const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -165,14 +166,9 @@ module.exports = {
         .setDisabled(false),
     );
 
-    interaction.update({
+    return interaction.update({
       embeds: [embed],
       components: [buttons],
-    });
-
-    return interaction.reply({
-      content: "Shift has started.",
-      ephemeral: true,
     });
   },
 };

@@ -4,6 +4,8 @@ const {
   PermissionFlagsBits,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } = require("discord.js");
 
 const db = require("../../db");
@@ -20,22 +22,47 @@ function formatTime(ms) {
 
   let result = "";
 
-  if (hours > 0) result += `${hours}hr `;
-  if (m > 0) result += `${m}m `;
-  if (s > 0) result += `${s}s`;
+  if (hours) result += `${hours}hr `;
+  if (m) result += `${m}m `;
+  if (s) result += `${s}s`;
 
   return result.trim();
 }
 
-function genShiftId() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let id = "";
+function getStatus(userId) {
+  const shift = db
+    .prepare(
+      `
+      SELECT status
+      FROM shifts
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 1
+      `,
+    )
+    .get(userId);
 
-  for (let i = 0; i < 5; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
+  if (!shift) return "Offline";
 
-  return id;
+  if (shift.status === "online") return "Online";
+
+  if (shift.status === "break") return "On Break";
+
+  return "Offline";
+}
+
+function getTotalTime(userId) {
+  const result = db
+    .prepare(
+      `
+      SELECT SUM(total_time) AS time
+      FROM shifts
+      WHERE user_id = ?
+      `,
+    )
+    .get(userId);
+
+  return result?.time || 0;
 }
 
 module.exports = {
@@ -44,30 +71,25 @@ module.exports = {
     .setDescription("Shift management system")
 
     .addSubcommand((sub) =>
-      sub.setName("manage").setDescription("Start or end your shift"),
+      sub.setName("manage").setDescription("Manage your shift"),
     )
 
     .addSubcommand((sub) =>
-      sub.setName("leaderboard").setDescription("View shift leaderboard"),
+      sub.setName("leaderboard").setDescription("View leaderboard"),
     )
 
     .addSubcommand((sub) =>
-      sub.setName("online").setDescription("View users on shift"),
+      sub.setName("online").setDescription("View online shifts"),
     )
 
-    .addSubcommand((sub) =>
-      sub.setName("reset").setDescription("Reset all shifts"),
-    )
+    .addSubcommand((sub) => sub.setName("reset").setDescription("Reset shifts"))
 
     .addSubcommand((sub) =>
       sub
         .setName("admin")
-        .setDescription("Manage a user's shifts")
+        .setDescription("Manage a user's shift")
         .addUserOption((option) =>
-          option
-            .setName("user")
-            .setDescription("User to manage")
-            .setRequired(true),
+          option.setName("user").setDescription("User").setRequired(true),
         ),
     ),
 
@@ -76,116 +98,53 @@ module.exports = {
 
     if (sub === "manage") {
       await interaction.deferReply();
-      const {
-        ActionRowBuilder,
-        ButtonBuilder,
-        ButtonStyle,
-      } = require("discord.js");
 
-      const user = interaction.user;
+      const userId = interaction.user.id;
 
-      const active = db
-        .prepare(
-          `
-        SELECT *
-        FROM shifts
-        WHERE user_id = ?
-        AND status = 'online'
-    `,
-        )
-        .get(user.id);
+      const status = getStatus(userId);
 
-      const total = db
-        .prepare(
-          `
-        SELECT SUM(total_time) AS time
-        FROM shifts
-        WHERE user_id = ?
-    `,
-        )
-        .get(user.id);
+      const totalTime = getTotalTime(userId);
 
       const count = db
         .prepare(
           `
-        SELECT COUNT(*) AS count
-        FROM shifts
-        WHERE user_id = ?
-    `,
+SELECT COUNT(*) AS count
+FROM shifts
+WHERE user_id = ?
+`,
         )
-        .get(user.id);
-
-      const wave = db
-        .prepare(
-          `
-        SELECT *
-        FROM shift_wave
-        WHERE status = 'active'
-        ORDER BY id DESC
-        LIMIT 1
-    `,
-        )
-        .get();
-
-      const waveId = wave ? wave.wave_id : "None";
-
-      const status = db
-        .prepare("SELECT status FROM shifts WHERE user_id = ?")
-        .get(user.id);
-
-      if (status === "break") {
-        Status = "On Break";
-      } else if (status === "online") {
-        Status = "Online";
-      } else {
-        Status = "Offline";
-      }
-
-      const total_time = db
-        .prepare(
-          `
-        SELECT SUM(total_time) AS time
-        FROM shifts
-        WHERE user_id = ?
-      `,
-        )
-        .get(user.id);
-
-      const totalTime = total_time ? total_time.time : 0;
+        .get(userId);
 
       const embed = new EmbedBuilder()
         .setTitle("Shift Management")
         .setDescription(
-          `Hey, <@${user.id}>. You are now managing your Shift
+          `Hey, <@${userId}>. You are now managing your shift.
 
-**Shift Status** ${Status}
-**Total Time** ${formatTime(totalTime)}
+**Shift Status** ${status}
+**Total Shift Time** ${formatTime(totalTime)}
 **Total Shifts** ${count.count}`,
         );
 
-      const userId = interaction.user.id;
-      const isOnline = db
-        .prepare("SELECT * FROM shifts WHERE user_id = ? AND status = 'online'")
-        .get(userId);
+      const active = status === "Online";
 
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId("shift_start")
           .setLabel("Start Shift")
           .setStyle(ButtonStyle.Success)
-          .setDisabled(!!isOnline),
+          .setDisabled(active || status === "On Break"),
 
         new ButtonBuilder()
-          .setCustomId("shift_break")
-          .setLabel("Take a Break")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(!isOnline),
+          .setCustomId(status === "On Break" ? "shift_resume" : "shift_break")
+          .setLabel(status === "On Break" ? "Resume Shift" : "Take A Break")
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(status === "Offline"),
 
         new ButtonBuilder()
           .setCustomId("shift_end")
           .setLabel("End Shift")
           .setStyle(ButtonStyle.Danger)
-          .setDisabled(!isOnline),
+          .setDisabled(status === "Offline"),
       );
 
       return interaction.editReply({
@@ -196,23 +155,30 @@ module.exports = {
 
     if (sub === "online") {
       const shifts = db
-        .prepare("SELECT * FROM shifts WHERE status = 'online'")
+        .prepare(
+          `
+SELECT *
+FROM shifts
+WHERE status = 'online'
+`,
+        )
         .all();
 
-      if (!shifts.length) {
+      if (!shifts.length)
         return interaction.reply("No users are currently on shift.");
-      }
-
-      const list = shifts
-        .map(
-          (shift) =>
-            `<@${shift.user_id}> - #${shift.shift_id} - ${formatTime(Date.now() - shift.started_at)}`,
-        )
-        .join("\n");
 
       return interaction.reply({
         embeds: [
-          new EmbedBuilder().setTitle("Online Shifts").setDescription(list),
+          new EmbedBuilder()
+            .setTitle("Online Shifts")
+            .setDescription(
+              shifts
+                .map(
+                  (shift) =>
+                    `<@${shift.user_id}> • #${shift.shift_id} • ${formatTime(Date.now() - shift.started_at)}`,
+                )
+                .join("\n"),
+            ),
         ],
       });
     }
@@ -221,27 +187,29 @@ module.exports = {
       const users = db
         .prepare(
           `
-                SELECT user_id, SUM(total_time) AS time
-                FROM shifts
-                GROUP BY user_id
-                ORDER BY time DESC
-                LIMIT 10
-            `,
+SELECT user_id,SUM(total_time) time
+FROM shifts
+GROUP BY user_id
+ORDER BY time DESC
+LIMIT 10
+`,
         )
         .all();
-
-      const list = users
-        .map(
-          (user, index) =>
-            `**${index + 1}.** <@${user.user_id}> - ${formatTime(user.time)}`,
-        )
-        .join("\n");
 
       return interaction.reply({
         embeds: [
           new EmbedBuilder()
             .setTitle("Shift Leaderboard")
-            .setDescription(list || "No shift data found."),
+            .setDescription(
+              users.length
+                ? users
+                    .map(
+                      (u, i) =>
+                        `**${i + 1}.** <@${u.user_id}> - ${formatTime(u.time)}`,
+                    )
+                    .join("\n")
+                : "No data.",
+            ),
         ],
       });
     }
@@ -249,16 +217,14 @@ module.exports = {
     if (sub === "reset") {
       if (
         !interaction.member.permissions.has(PermissionFlagsBits.Administrator)
-      ) {
+      )
         return interaction.reply({
-          content: "You do not have permission.",
+          content: "No permission.",
           ephemeral: true,
         });
-      }
 
       db.prepare("DELETE FROM shifts").run();
       db.prepare("DELETE FROM shifts_breaks").run();
-      db.prepare("DELETE FROM shift_wave").run();
 
       return interaction.reply("All shifts have been reset.");
     }
@@ -266,94 +232,59 @@ module.exports = {
     if (sub === "admin") {
       if (
         !interaction.member.permissions.has(PermissionFlagsBits.Administrator)
-      ) {
+      )
         return interaction.reply({
-          content: "You do not have permission.",
+          content: "No permission.",
           ephemeral: true,
         });
-      }
 
       const user = interaction.options.getUser("user");
 
-      const active = db
-        .prepare(
-          `
-        SELECT *
-        FROM shifts
-        WHERE user_id = ?
-        AND status = 'online'
-        ORDER BY id DESC
-        LIMIT 1
-    `,
-        )
-        .get(user.id);
+      const status = getStatus(user.id);
 
       const shifts = db
         .prepare(
           `
-        SELECT *
-        FROM shifts
-        WHERE user_id = ?
-        ORDER BY id DESC
-    `,
+SELECT *
+FROM shifts
+WHERE user_id = ?
+ORDER BY id DESC
+`,
         )
         .all(user.id);
-
-      const totalTime = shifts.reduce(
-        (total, shift) => total + shift.total_time,
-        0,
-      );
-
-      const wave = db
-        .prepare(
-          `
-        SELECT *
-        FROM shift_wave
-        WHERE status = 'active'
-        ORDER BY id DESC
-        LIMIT 1
-    `,
-        )
-        .get();
-
-      const waveId = wave ? wave.wave_id : "None";
 
       const embed = new EmbedBuilder()
         .setTitle("Shift Administration")
         .setDescription(
-          `Managing <@${user.id}>'s shift
+          `Managing <@${user.id}>
 
-**Shift Status:** ${active ? "Online" : "Offline"}
-**Total Shift Time:** ${formatTime(totalTime)}
+**Status:** ${status}
+**Total Time:** ${formatTime(getTotalTime(user.id))}
 **Total Shifts:** ${shifts.length}`,
         )
-        .setColor(0xff0000)
-        .setFooter({ text: `${user.username}` });
+        .setColor(0xff0000);
 
       const menu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`shift_admin_actions:${user.id}`)
-          .setPlaceholder("Select an action")
+          .setPlaceholder("Select action")
+
           .addOptions([
             {
               label: "Start Shift",
               value: "start",
-              description: "Start this user's shift",
             },
             {
               label: "Take Break",
               value: "break",
-              description: "Put user on break",
             },
             {
               label: "End Shift",
               value: "end",
-              description: "End this user's shift",
             },
             {
               label: "View Shifts",
               value: "view_shifts",
-              description: "View shift history",
             },
           ]),
       );
