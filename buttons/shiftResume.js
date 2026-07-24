@@ -50,6 +50,7 @@ module.exports = {
   customId: "shift_break",
 
   async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
     const userId = interaction.user.id;
 
     const shift = db
@@ -165,9 +166,14 @@ module.exports = {
         .setDisabled(false),
     );
 
-    return interaction.update({
+    interaction.update({
       embeds: [embed],
       components: [buttons],
+    });
+
+    return interaction.reply({
+      content: "Shift has resumed.",
+      ephemeral: true,
     });
   },
 };

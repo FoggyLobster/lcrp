@@ -165,9 +165,14 @@ module.exports = {
         .setDisabled(false),
     );
 
-    return interaction.update({
+    interaction.update({
       embeds: [embed],
       components: [buttons],
+    });
+
+    return interaction.reply({
+      content: "Break has started.",
+      ephemeral: true,
     });
   },
 };
