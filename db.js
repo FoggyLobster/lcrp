@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS shifts (
 `,
 ).run();
 
+db.prepare(`DROP TABLE IF EXISTS shifts_breaks`).run();
+
 db.prepare(
   `
 CREATE TABLE IF NOT EXISTS shifts_breaks (
