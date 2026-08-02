@@ -10,7 +10,12 @@ async function getQueue() {
 
   try {
     const res = await fetch("https://api.erlc.gg/v1/server/queue", options);
-    return await res.json();
+
+    const data = await res.json();
+
+    console.log(data);
+
+    return data;
   } catch (err) {
     console.error(err);
     return null;
