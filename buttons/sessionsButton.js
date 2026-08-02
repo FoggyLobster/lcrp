@@ -13,13 +13,13 @@ module.exports = {
         content: "Removed the sessions role successfully.",
         ephemeral: true,
       });
+    } else {
+      interaction.member.roles.add(role_id);
+
+      return interaction.reply({
+        content: "Added the sessions role successfully.",
+        ephemeral: true,
+      });
     }
-
-    await interaction.member.roles.add(role_id);
-
-    return interaction.reply({
-      content: "Added the sessions role successfully.",
-      ephemeral: true,
-    });
   },
 };
