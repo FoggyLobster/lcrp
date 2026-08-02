@@ -54,6 +54,7 @@ module.exports = {
     }
 
     if (sub === "start") {
+      await interaction.deferReply({ ephemeral: true });
       const active = db
         .prepare(
           `
@@ -85,7 +86,7 @@ module.exports = {
                 `,
       ).run("active", userId, Date.now());
 
-      interaction.reply({
+      interaction.editReply({
         content: "Session has started.",
         ephemeral: true,
       });
@@ -182,6 +183,7 @@ module.exports = {
     }
 
     if (sub === "end") {
+      await interaction.deferReply({ ephemeral: true });
       const userId = interaction.user.id;
 
       const active = db
@@ -212,7 +214,7 @@ module.exports = {
               `,
       ).run(Date.now(), userId);
 
-      interaction.reply({
+      interaction.editReply({
         content: "Session has ended.",
         ephemeral: true,
       });
