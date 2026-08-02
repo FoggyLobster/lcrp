@@ -25,9 +25,11 @@ async function getPlayers() {
 async function getTotalPlayers() {
   const players = await getPlayers();
 
+  console.log("PLAYER RESPONSE:", players);
+
   if (!players) return 0;
 
-  return players.total;
+  return players;
 }
 
 module.exports = {
