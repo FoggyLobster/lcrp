@@ -84,4 +84,17 @@ db.prepare(
   `,
 ).run();
 
+db.prepare(
+  `
+  CREATE TABLE IF NOT EXISTS sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  status TEXT NOT NULL DEFAULT 'ssd',
+  user_id TEXT NOT NULL,
+  start_time INTEGER NOT NULL,
+  end_time INTEGER,
+  total_time INTEGER DEFAULT 0
+  );
+  `,
+).run();
+
 module.exports = db;
