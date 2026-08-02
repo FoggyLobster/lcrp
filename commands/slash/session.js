@@ -1,6 +1,7 @@
 const db = require("../../db");
 const { SlashCommandBuilder } = require("discord.js");
 const { getPlayers, getTotalPlayers } = require("../../utils/erlc/getPlayers");
+const { getQueue, getTotalQueue } = require("../../utils/erlc/getQueue");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -42,6 +43,7 @@ module.exports = {
       "1529308324724736030",
       "1529307197400547469",
     ];
+
     const hasRoles = interaction.member.roles.cache.some((role) =>
       ROLE_IDS.includes(role.id),
     );
@@ -55,13 +57,14 @@ module.exports = {
 
     if (sub === "start") {
       await interaction.deferReply({ ephemeral: true });
+
       const active = db
         .prepare(
           `
-                SELECT *
-                FROM sessions
-                WHERE status = ?
-                `,
+          SELECT *
+          FROM sessions
+          WHERE status = ?
+          `,
         )
         .get("active");
 
@@ -76,17 +79,17 @@ module.exports = {
 
       db.prepare(
         `
-                INSERT INTO sessions
-                (
-                    status,
-                    user_id,
-                    start_time
-                )
-                VALUES (?, ?, ?)
-                `,
+        INSERT INTO sessions
+        (
+          status,
+          user_id,
+          start_time
+        )
+        VALUES (?, ?, ?)
+        `,
       ).run("active", userId, Date.now());
 
-      interaction.editReply({
+      await interaction.editReply({
         content: "Session has started.",
         ephemeral: true,
       });
@@ -96,16 +99,7 @@ module.exports = {
       );
 
       const totalPlayers = await getTotalPlayers();
-      const { getQueue } = require("../../utils/erlc/getQueue");
-      const queue = await getQueue();
-
-      if (totalPlayers === 0) {
-        TotalPlayers = "0";
-      }
-
-      if (queue === 0) {
-        Queue = "0";
-      }
+      const queue = await getTotalQueue();
 
       return channel.send({
         flags: 32768,
@@ -147,7 +141,7 @@ module.exports = {
                   },
                   custom_id: "p_331173348321005569",
                   disabled: true,
-                  label: `Players: ${TotalPlayers}`,
+                  label: `Players: ${totalPlayers}`,
                 },
               },
               {
@@ -167,7 +161,7 @@ module.exports = {
                   },
                   custom_id: "p_331173430437089283",
                   disabled: true,
-                  label: `Queue: ${Queue}`,
+                  label: `Queue: ${queue}`,
                 },
               },
               {
@@ -192,16 +186,17 @@ module.exports = {
 
     if (sub === "end") {
       await interaction.deferReply({ ephemeral: true });
+
       const userId = interaction.user.id;
 
       const active = db
         .prepare(
           `
-                SELECT *
-                FROM sessions
-                WHERE user_id = ?
-                AND status = 'active'
-                `,
+          SELECT *
+          FROM sessions
+          WHERE user_id = ?
+          AND status = 'active'
+          `,
         )
         .get(userId);
 
@@ -214,15 +209,15 @@ module.exports = {
 
       db.prepare(
         `
-                UPDATE sessions
-                SET
-                  status = 'ended',
-                  end_time = ?
-                WHERE user_id = ?
-              `,
+        UPDATE sessions
+        SET
+          status = 'ended',
+          end_time = ?
+        WHERE user_id = ?
+        `,
       ).run(Date.now(), userId);
 
-      interaction.editReply({
+      await interaction.editReply({
         content: "Session has ended.",
         ephemeral: true,
       });
