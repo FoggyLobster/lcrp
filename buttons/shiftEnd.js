@@ -173,7 +173,7 @@ module.exports = {
         .setDisabled(true),
     );
 
-    interaction.edit({
+    interaction.update({
       embeds: [embed],
       components: [buttons],
     });
