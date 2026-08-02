@@ -85,7 +85,7 @@ module.exports = {
                 `,
       ).run("active", userId, Date.now());
 
-      return interaction.reply({
+      interaction.reply({
         content: "Session has started.",
         ephemeral: true,
       });
@@ -212,7 +212,7 @@ module.exports = {
               `,
       ).run(Date.now(), userId);
 
-      return interaction.reply({
+      interaction.reply({
         content: "Session has ended.",
         ephemeral: true,
       });
