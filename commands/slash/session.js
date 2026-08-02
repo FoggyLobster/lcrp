@@ -3,6 +3,9 @@ const { SlashCommandBuilder } = require("discord.js");
 const { getPlayers, getTotalPlayers } = require("../../utils/erlc/getPlayers");
 const { getQueue, getTotalQueue } = require("../../utils/erlc/getQueue");
 
+let sessionInterval;
+let sessionMessage;
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("session")
@@ -61,10 +64,10 @@ module.exports = {
       const active = db
         .prepare(
           `
-          SELECT *
-          FROM sessions
-          WHERE status = ?
-          `,
+      SELECT *
+      FROM sessions
+      WHERE status = ?
+      `,
         )
         .get("active");
 
@@ -79,14 +82,14 @@ module.exports = {
 
       db.prepare(
         `
-        INSERT INTO sessions
-        (
-          status,
-          user_id,
-          start_time
-        )
-        VALUES (?, ?, ?)
-        `,
+    INSERT INTO sessions
+    (
+      status,
+      user_id,
+      start_time
+    )
+    VALUES (?, ?, ?)
+    `,
       ).run("active", userId, Date.now());
 
       await interaction.editReply({
@@ -98,12 +101,11 @@ module.exports = {
         "1529575007217258700",
       );
 
-      const totalPlayers = await getTotalPlayers();
-      const queue = await getTotalQueue();
+      const createSessionComponents = async () => {
+        const totalPlayers = await getTotalPlayers();
+        const queue = await getTotalQueue();
 
-      return channel.send({
-        flags: 32768,
-        components: [
+        return [
           {
             type: 17,
             components: [
@@ -117,8 +119,7 @@ module.exports = {
               },
               {
                 type: 10,
-                content:
-                  "**<:info:1532075849304637660> Server Information**\n\n**Server Owner:** GameWorldFun\n**Server Tier:** Tier 1\n**Server Code:** \\`LAKESHORE\\`",
+                content: `**<:info:1532075849304637660> Server Information**\n\n**Server Owner:** GameWorldFun\n**Server Tier:** Tier 1\n**Server Code:** \`LAKESHORE\`\n\nLast Updated: <t:${Math.floor(Date.now() / 1000)}:R>`,
               },
               {
                 type: 14,
@@ -180,8 +181,23 @@ module.exports = {
               },
             ],
           },
-        ],
+        ];
+      };
+
+      const sessionMessage = await channel.send({
+        flags: 32768,
+        components: await createSessionComponents(),
       });
+
+      sessionInterval = setInterval(async () => {
+        try {
+          await sessionMessage.edit({
+            components: await createSessionComponents(),
+          });
+        } catch (err) {
+          console.error("Session update error:", err);
+        }
+      }, 60000);
     }
 
     if (sub === "end") {
