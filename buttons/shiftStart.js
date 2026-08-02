@@ -166,7 +166,7 @@ module.exports = {
         .setDisabled(false),
     );
 
-    interaction.update({
+    interaction.edit({
       embeds: [embed],
       components: [buttons],
     });
