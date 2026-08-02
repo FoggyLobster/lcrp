@@ -66,7 +66,7 @@ module.exports = {
         .get("active");
 
       if (active) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "There is an active session.",
           ephemeral: true,
         });
@@ -198,7 +198,7 @@ module.exports = {
         .get(userId);
 
       if (!active) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "There is no active session.",
           ephemeral: true,
         });
