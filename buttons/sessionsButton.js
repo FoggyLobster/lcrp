@@ -9,10 +9,11 @@ module.exports = {
     if (alreadyHasRole) {
       interaction.member.roles.remove(role_id);
 
-      return interaction.reply({
+      interaction.reply({
         content: "Removed the sessions role successfully.",
         ephemeral: true,
       });
+      return;
     } else {
       interaction.member.roles.add(role_id);
 
@@ -20,6 +21,7 @@ module.exports = {
         content: "Added the sessions role successfully.",
         ephemeral: true,
       });
+      return;
     }
   },
 };
