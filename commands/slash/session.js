@@ -99,6 +99,14 @@ module.exports = {
       const { getQueue } = require("../../utils/erlc/getQueue");
       const queue = await getQueue();
 
+      if (totalPlayers === 0) {
+        TotalPlayers = "0";
+      }
+
+      if (queue === 0) {
+        Queue = "0";
+      }
+
       return channel.send({
         flags: 32768,
         components: [
@@ -139,7 +147,7 @@ module.exports = {
                   },
                   custom_id: "p_331173348321005569",
                   disabled: true,
-                  label: `Players: ${totalPlayers}`,
+                  label: `Players: ${TotalPlayers}`,
                 },
               },
               {
@@ -159,7 +167,7 @@ module.exports = {
                   },
                   custom_id: "p_331173430437089283",
                   disabled: true,
-                  label: `Queue: ${queue}`,
+                  label: `Queue: ${Queue}`,
                 },
               },
               {
