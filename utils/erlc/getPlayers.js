@@ -1,36 +1,58 @@
+const axios = require("axios");
 require("dotenv").config();
 
-async function getPlayers() {
-  const options = {
-    method: "GET",
-    headers: {
-      "server-key": process.env.API_KEY,
-    },
-  };
+const API_KEY = process.env.API_KEY;
 
-  try {
-    const res = await fetch("https://api.erlc.gg/v1/server/players", options);
-
-    const data = await res.json();
-
-    console.log(data);
-
-    return data;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
+if (!API_KEY) {
+  console.log("No API key found. Please set the API_KEY environment variable.");
 }
 
-async function getTotalPlayers() {
-  const players = await getPlayers();
+const ERLC_API_URL = "https://api.erlc.gg/v1/server/players";
 
-  if (!players) return 0;
-
-  return players.total;
-}
+const api = axios.create({
+  baseURL: ERLC_API_URL,
+  headers: {
+    Authorization: API_KEY,
+  },
+  timeout: 10000,
+});
 
 module.exports = {
-  getPlayers,
-  getTotalPlayers,
+  async getPlayers() {
+    try {
+      const response = await api.get("/server/players");
+
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  },
+
+  async getPlayerCount() {
+    try {
+      const players = await this.getPlayers();
+      return {
+        online: players.length,
+        players,
+      };
+    } catch (error) {
+      console.error(error);
+
+      return {
+        online: 0,
+        players: [],
+      };
+    }
+  },
+
+  async isOnline() {
+    const data = await this.getPlayerCount();
+    return data.online > 0;
+  },
+
+  async getPlayerNames() {
+    const data = await this.getPlayerCount();
+    return data.players.map((player) => player.Player);
+  },
 };

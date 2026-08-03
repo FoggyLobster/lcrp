@@ -1,7 +1,7 @@
 const db = require("../../db");
 const { SlashCommandBuilder } = require("discord.js");
-const { getPlayers, getTotalPlayers } = require("../../utils/erlc/getPlayers");
-const { getQueue, getTotalQueue } = require("../../utils/erlc/getQueue");
+const erlc = require("../../systems/erlc/getPlayers");
+const { getTotalQueue } = require("../../utils/erlc/getQueue");
 
 let sessionInterval;
 let sessionMessage;
@@ -41,6 +41,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     const isAdmin = interaction.member.permissions.has("Administrator");
+
     const ROLE_IDS = [
       "1529592813380173864",
       "1529308324724736030",
@@ -64,45 +65,43 @@ module.exports = {
       const active = db
         .prepare(
           `
-      SELECT *
-      FROM sessions
-      WHERE status = ?
-      `,
+          SELECT *
+          FROM sessions
+          WHERE status = ?
+          `,
         )
         .get("active");
 
       if (active) {
         return interaction.editReply({
           content: "There is an active session.",
-          ephemeral: true,
         });
       }
 
-      const userId = interaction.user.id;
-
       db.prepare(
         `
-    INSERT INTO sessions
-    (
-      status,
-      user_id,
-      start_time
-    )
-    VALUES (?, ?, ?)
-    `,
-      ).run("active", userId, Date.now());
+        INSERT INTO sessions
+        (
+          status,
+          user_id,
+          start_time
+        )
+        VALUES (?, ?, ?)
+        `,
+      ).run("active", interaction.user.id, Date.now());
 
       await interaction.editReply({
         content: "Session has started.",
-        ephemeral: true,
       });
 
       const channel = interaction.guild.channels.cache.get(
         "1529575007217258700",
       );
 
+      if (!channel) return;
+
       const createSessionComponents = async () => {
-        const totalPlayers = await getTotalPlayers();
+        const totalPlayers = await erlc.getTotalPlayers();
         const queue = await getTotalQueue();
 
         return [
@@ -119,7 +118,12 @@ module.exports = {
               },
               {
                 type: 10,
-                content: `**<:info:1532075849304637660> Server Information**\n\n**Server Owner:** GameWorldFun\n**Server Tier:** Tier 1\n**Server Code:** \`LAKESHORE\`\n\nLast Updated: <t:${Math.floor(Date.now() / 1000)}:R>`,
+                content:
+                  `**<:info:1532075849304637660> Server Information**\n\n` +
+                  `**Server Owner:** GameWorldFun\n` +
+                  `**Server Tier:** Tier 1\n` +
+                  `**Server Code:** \`LAKESHORE\`\n\n` +
+                  `Last Updated: <t:${Math.floor(Date.now() / 1000)}:R>`,
               },
               {
                 type: 14,
@@ -174,7 +178,7 @@ module.exports = {
                 items: [
                   {
                     media: {
-                      url: "https://media.discordapp.net/attachments/1529315074991325215/1530981511183208579/underbanner.png?ex=6a70c7a4&is=6a6f7624&hm=6c2ee8bd21f2293e57e26ab0d3e01812a93c33bd5a76c83cccb0a4a2aae0884e&=&format=webp&quality=lossless&width=683&height=67",
+                      url: "https://media.discordapp.net/attachments/1529315074991325215/1530981511183208579/underbanner.png",
                     },
                   },
                 ],
@@ -184,7 +188,7 @@ module.exports = {
         ];
       };
 
-      const sessionMessage = await channel.send({
+      sessionMessage = await channel.send({
         flags: 32768,
         components: await createSessionComponents(),
       });
@@ -203,8 +207,6 @@ module.exports = {
     if (sub === "end") {
       await interaction.deferReply({ ephemeral: true });
 
-      const userId = interaction.user.id;
-
       const active = db
         .prepare(
           `
@@ -214,12 +216,11 @@ module.exports = {
           AND status = 'active'
           `,
         )
-        .get(userId);
+        .get(interaction.user.id);
 
       if (!active) {
         return interaction.editReply({
           content: "There is no active session.",
-          ephemeral: true,
         });
       }
 
@@ -231,16 +232,22 @@ module.exports = {
           end_time = ?
         WHERE user_id = ?
         `,
-      ).run(Date.now(), userId);
+      ).run(Date.now(), interaction.user.id);
+
+      if (sessionInterval) {
+        clearInterval(sessionInterval);
+        sessionInterval = null;
+      }
 
       await interaction.editReply({
         content: "Session has ended.",
-        ephemeral: true,
       });
 
       const channel = interaction.guild.channels.cache.get(
         "1529575007217258700",
       );
+
+      if (!channel) return;
 
       return channel.send({
         flags: 32768,
@@ -280,7 +287,7 @@ module.exports = {
                 items: [
                   {
                     media: {
-                      url: "https://media.discordapp.net/attachments/1529315074991325215/1530981511183208579/underbanner.png?ex=6a70c7a4&is=6a6f7624&hm=6c2ee8bd21f2293e57e26ab0d3e01812a93c33bd5a76c83cccb0a4a2aae0884e&=&format=webp&quality=lossless&width=683&height=67",
+                      url: "https://media.discordapp.net/attachments/1529315074991325215/1530981511183208579/underbanner.png",
                     },
                   },
                 ],
