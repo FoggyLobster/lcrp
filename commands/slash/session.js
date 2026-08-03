@@ -95,7 +95,7 @@ module.exports = {
       });
 
       const channel = interaction.guild.channels.cache.get(
-        "1529575007217258700",
+        "1529957808156577984",
       );
 
       if (!channel) return;
@@ -244,7 +244,7 @@ module.exports = {
       });
 
       const channel = interaction.guild.channels.cache.get(
-        "1529575007217258700",
+        "1529957808156577984",
       );
 
       if (!channel) return;
