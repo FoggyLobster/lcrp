@@ -309,7 +309,6 @@ module.exports = {
         WHERE issued_by = ?
         ORDER BY issued_at DESC
         LIMIT 10
-        );
         `,
         )
         .run(User.id);
