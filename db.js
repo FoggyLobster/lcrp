@@ -97,4 +97,13 @@ db.prepare(
   `,
 ).run();
 
+db.prepare(
+  `
+  CREATE TABLE IF NOT EXISTS ranks (
+  user_id TEXT PRIMARY KEY,
+  rank INTEGER NOT NULL DEFAULT "Unranked",
+  );
+  `,
+).run();
+
 module.exports = db;
