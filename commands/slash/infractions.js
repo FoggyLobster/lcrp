@@ -67,7 +67,13 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("logs")
-        .setDescription("View infraction logs for a user or yourself"),
+        .setDescription("View infraction logs for a user or yourself")
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to view.")
+            .setRequired(false),
+        ),
     )
 
     .addSubcommand((subcommand) =>
