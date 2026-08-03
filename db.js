@@ -102,6 +102,7 @@ db.prepare(
   CREATE TABLE IF NOT EXISTS ranks (
   user_id TEXT PRIMARY KEY,
   rank INTEGER NOT NULL DEFAULT "Unranked",
+  rank_roles TEXT NOT NULL DEFAULT "[]"
   );
   `,
 ).run();
