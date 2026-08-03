@@ -66,6 +66,12 @@ module.exports = {
 
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("logs")
+        .setDescription("View infraction logs for a user or yourself"),
+    )
+
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("void")
         .setDescription("Remove an infraction.")
         .addUserOption((option) =>
@@ -285,6 +291,54 @@ module.exports = {
 
       return interaction.editReply({
         content: `Successfully voided infraction ${id}.`,
+      });
+    }
+
+    if (subcommand === "logs") {
+      const user = interaction.options.getUser("user");
+
+      if (!user) {
+        User = interaction.user;
+      }
+
+      const infractions = db
+        .prepare(
+          `
+        SELECT *
+        FROM infractions
+        WHERE issued_by = ?
+        ORDER BY issued_at DESC
+        LIMIT 10
+        );
+        `,
+        )
+        .run(User.id);
+
+      if (!infractions.length) {
+        return interaction.editReply({
+          content: `No infraction logs found for ${user}.`,
+        });
+      }
+
+      const formatList = infractions
+        .map(
+          (infraction) =>
+            `**ID:** \`${infraction.id}\`
+**Type:** ${infraction.infraction_type}
+**Reason:** ${infraction.reason}
+**Issued By:** <@${infraction.issued_by}>
+**Issued At:** <t:${Math.floor(infraction.issued_at / 1000)}:R>`,
+        )
+        .join("\n\n");
+
+      return interaction.editReply({
+        embeds: [
+          {
+            color: 0x2b2d31,
+            title: `${user.username}'s Infraction Logs`,
+            description: formatList,
+          },
+        ],
       });
     }
   },

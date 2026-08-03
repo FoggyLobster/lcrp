@@ -86,6 +86,12 @@ db.prepare(
 
 db.prepare(
   `
+  CREATE COLUMN IF NOT EXISTS infractions.issued_by TEXT NOT NULL
+  `,
+);
+
+db.prepare(
+  `
   CREATE TABLE IF NOT EXISTS sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   status TEXT NOT NULL DEFAULT 'ssd',
