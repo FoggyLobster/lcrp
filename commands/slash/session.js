@@ -1,6 +1,6 @@
 const db = require("../../db");
 const { SlashCommandBuilder } = require("discord.js");
-const erlc = require("../../systems/erlc/getPlayers");
+const erlc = require("../../utils/erlc/getPlayers");
 const { getTotalQueue } = require("../../utils/erlc/getQueue");
 
 let sessionInterval;
