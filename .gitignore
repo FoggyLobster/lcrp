@@ -1,2 +1,3 @@
 /node_modules
-.envdata/database.db
+.env
+data/database.db
