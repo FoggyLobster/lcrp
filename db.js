@@ -116,6 +116,7 @@ db.prepare(
   ticket_type TEXT NOT NULL,
   reason TEXT,
   claimed_by TEXT,
+  created_at TEXT NOT NULL
   );
   `,
 ).run();
