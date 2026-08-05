@@ -107,7 +107,7 @@ db.prepare(
   `,
 ).run();
 
-db.prepare(`DROP TABLE IF EXISTS tickets;`).run();
+db.prepare(`DROP TABLE IF EXISTS tickets`).run();
 
 db.prepare(
   `
@@ -119,7 +119,7 @@ db.prepare(
   reason TEXT,
   claimed_by TEXT,
   closed_at INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
   );
   `,
 );
