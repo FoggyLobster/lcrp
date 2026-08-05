@@ -130,8 +130,8 @@ module.exports = {
       const first5Chars = user.username.substring(0, 5);
 
       const existingTicket = db
-        .prepare(`SELECT * FROM tickets WHERE user_id = ?`)
-        .run(userId);
+        .prepare(`SELECT * FROM tickets WHERE user_id = ? AND ticket_type = ?`)
+        .get(userId, type);
 
       if (existingTicket) {
         return interaction.editReply({
