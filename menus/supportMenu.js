@@ -139,6 +139,8 @@ module.exports = {
         });
       }
 
+      const role_id = support_role_ids;
+
       const ticketChannel = await interaction.guild.channels.create({
         name: `${type}-${interaction.user.username}`,
         type: ChannelType.GuildText,
@@ -161,7 +163,7 @@ module.exports = {
           })),
 
           {
-            id: interaction.guild.members.me.id,
+            id: interaction.client.user.id,
             allow: [
               PermissionsBitField.Flags.ViewChannel,
               PermissionsBitField.Flags.SendMessages,
