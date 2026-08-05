@@ -119,7 +119,7 @@ module.exports = {
     }
 
     if (selected === "reward_claim") {
-      const msg = await interaction.reply("Making ticket...");
+      await interaction.deferReply({ ephemeral: true });
 
       const user = interaction.user;
       const userId = user.id;
@@ -139,7 +139,7 @@ module.exports = {
 
       if (alreadyOpen) {
         return interaction.editReply(
-          `You already have a ticket open! Please close your existing ticket before opening a new one. You can view your ticket here: <#${alreadyOpen[0].channel_id}>`,
+          `You already have a ticket open! Please close your existing ticket before opening a new one. You can view your ticket here: <#${alreadyOpen.channel_id}>`,
         );
       }
 
