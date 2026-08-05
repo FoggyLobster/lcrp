@@ -158,7 +158,7 @@ module.exports = {
             allow: [
               PermissionsBitField.Flags.ViewChannel,
               PermissionsBitField.Flags.SendMessages,
-              PermissionsBitField.Flags.ViewMessageHistory,
+              PermissionsBitField.Flags.ReadMessageHistory,
             ],
           })),
 
@@ -167,7 +167,7 @@ module.exports = {
             allow: [
               PermissionsBitField.Flags.ViewChannel,
               PermissionsBitField.Flags.SendMessages,
-              PermissionsBitField.Flags.ViewMessageHistory,
+              PermissionsBitField.Flags.ReadMessageHistory,
             ],
           },
 
@@ -176,7 +176,7 @@ module.exports = {
             allow: [
               PermissionsBitField.Flags.ViewChannel,
               PermissionsBitField.Flags.SendMessages,
-              PermissionsBitField.Flags.ViewMessageHistory,
+              PermissionsBitField.Flags.ReadMessageHistory,
             ],
           },
         ],
