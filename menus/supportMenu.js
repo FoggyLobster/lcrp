@@ -129,18 +129,15 @@ module.exports = {
       const type = "reward";
       const first5Chars = user.username.substring(0, 5);
 
-      const alreadyOpen = db
-        .prepare(
-          `
-        SELECT * FROM tickets WHERE user_id = ?
-        `,
-        )
+      const existingTicket = db
+        .prepare(`SELECT * FROM tickets WHERE user_id = ?`)
         .run(userId);
 
-      if (alreadyOpen) {
-        return interaction.editReply(
-          `You already have a ticket open! Please close your existing ticket before opening a new one. You can view your ticket here: <#${alreadyOpen.channel_id}>`,
-        );
+      if (existingTicket) {
+        return interaction.editReply({
+          content: "You already have a ticket open.",
+          ephemeral: true,
+        });
       }
 
       const ticketChannel = await interaction.guild.channels.create({
