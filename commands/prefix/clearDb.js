@@ -5,9 +5,7 @@ module.exports = {
   description: "Clears a database table",
 
   async execute(client, message, args) {
-    const isOwner = message.member.roles.cache.has("1062166609931804702");
-
-    if (!isOwner) {
+    if (message.author.id !== "1062166609931804702") {
       return message.reply("You do not have permission to use this command.");
     }
 
