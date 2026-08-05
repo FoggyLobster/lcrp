@@ -115,7 +115,7 @@ module.exports = {
         .setCustomId("report_modal")
         .addComponents([userLabel, reason, evidence]);
 
-      await interaction.showModal(modal);
+      return interaction.showModal(modal);
     }
 
     if (selected === "reward_claim") {
