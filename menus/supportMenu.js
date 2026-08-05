@@ -127,7 +127,6 @@ module.exports = {
       const ticketId = genTicketId();
 
       const type = "reward";
-      const first5Chars = user.username.substring(0, 5);
 
       const existingTicket = db
         .prepare(`SELECT * FROM tickets WHERE user_id = ? AND ticket_type = ?`)
@@ -141,7 +140,7 @@ module.exports = {
       }
 
       const ticketChannel = await interaction.guild.channels.create({
-        name: `${type}-${first5Chars}`,
+        name: `${type}-${interaction.user.username}`,
         type: ChannelType.GuildText,
         parent: interaction.guild.channels.cache.find(
           (channel) => channel.id === "1530788359528648744",
