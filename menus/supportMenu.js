@@ -132,7 +132,7 @@ module.exports = {
       const alreadyOpen = db
         .prepare(
           `
-        SELECT FROM tickets WHERE user_id = ?
+        SELECT * FROM tickets WHERE user_id = ?
         `,
         )
         .run(userId);
