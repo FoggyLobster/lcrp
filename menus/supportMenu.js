@@ -177,10 +177,10 @@ module.exports = {
 
       db.prepare(
         `
-        INSERT INTO tickets (id, user_id, channel_id, ticket_type)
+        INSERT INTO tickets (id, user_id, channel_id, ticket_type, created_at)
         VALUES (?, ?, ?, ?)
         `,
-      ).run(ticketId, userId, ticketChannel.id, type);
+      ).run(ticketId, userId, ticketChannel.id, type, Date.now());
 
       await interaction.editReply(
         `Ticket can be seen here: <#${ticketChannel.id}>`,

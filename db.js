@@ -116,10 +116,8 @@ db.prepare(
   ticket_type TEXT NOT NULL,
   reason TEXT,
   claimed_by TEXT,
-  closed_at INTEGER NOT NULL,
-  created_at TEXT NOT NULL
   );
   `,
-);
+).run();
 
 module.exports = db;
