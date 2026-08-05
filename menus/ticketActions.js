@@ -3,9 +3,6 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
   UserSelectMenuBuilder,
   LabelBuilder,
 } = require("discord.js");
