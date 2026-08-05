@@ -178,7 +178,7 @@ module.exports = {
       db.prepare(
         `
         INSERT INTO tickets (id, user_id, channel_id, ticket_type, created_at)
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
         `,
       ).run(ticketId, userId, ticketChannel.id, type, Date.now());
 
