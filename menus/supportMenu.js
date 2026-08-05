@@ -147,21 +147,30 @@ module.exports = {
         ),
         permissionOverwrites: [
           {
-            id: interaction.guild.roles.everyone,
+            id: interaction.guild.roles.everyone.id,
             deny: [PermissionsBitField.Flags.ViewChannel],
           },
-          {
-            ...support_role_ids.map((role_id) => ({
-              id: role_id,
-              allow: [
-                PermissionsBitField.Flags.ViewChannel,
-                PermissionsBitField.Flags.SendMessages,
-                PermissionsBitField.Flags.ViewMessageHistory,
-              ],
-            })),
-          },
+
+          ...support_role_ids.map((role_id) => ({
+            id: role_id,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.SendMessages,
+              PermissionsBitField.Flags.ViewMessageHistory,
+            ],
+          })),
+
           {
             id: interaction.guild.members.me.id,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.SendMessages,
+              PermissionsBitField.Flags.ViewMessageHistory,
+            ],
+          },
+
+          {
+            id: interaction.user.id,
             allow: [
               PermissionsBitField.Flags.ViewChannel,
               PermissionsBitField.Flags.SendMessages,
