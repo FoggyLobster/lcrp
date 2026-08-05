@@ -107,4 +107,21 @@ db.prepare(
   `,
 ).run();
 
+db.prepare(`DROP TABLE IF EXISTS tickets;`).run();
+
+db.prepare(
+  `
+  CREATE TABLE IF NOT EXISTS tickets (
+  id INTEGER PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  channel_id TEXT NOT NULL,
+  ticket_type TEXT NOT NULL,
+  reason TEXT,
+  claimed_by TEXT,
+  closed_at INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  );
+  `,
+);
+
 module.exports = db;
